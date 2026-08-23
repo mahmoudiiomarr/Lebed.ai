@@ -1,0 +1,13 @@
+[functions.groq-chat]
+# LEBED.ai supports guest chat. The Groq key remains server-only; the function
+# is called using the app's public Supabase key, with CORS restricted in code.
+verify_jwt = false
+
+[functions.auth]
+# Replaces every api/*.php endpoint (login, signup, verify-otp, logout,
+# resend, get-profile, change-email, change-password, update-name,
+# upload-avatar). verify_jwt is off because guests must be able to call
+# "login" and "signup" with no session yet — every action that needs an
+# authenticated user (change-password, update-name, upload-avatar, etc.)
+# verifies the access_token itself inside index.ts instead.
+verify_jwt = false

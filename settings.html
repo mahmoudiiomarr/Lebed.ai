@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings — LEBED.ai</title>
+    
+    <link rel="icon" type="image/png" href="orangeico.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+<div class="settings-shell">
+  <a href="index.html" class="back-link">&larr; Back to LEBED.ai</a>
+
+  <div class="settings-layout">
+
+    <!-- ===== SIDEBAR (Windows-style settings nav) ===== -->
+    <aside class="settings-nav">
+      <div class="nav-profile-mini">
+        <input type="file" id="avatarInput" accept="image/png, image/jpeg, image/webp" hidden>
+        <div class="avatar-preview-wrap" id="avatarTrigger" title="Click to change avatar">
+          <img id="avatarPreview" src="" alt="Profile picture" class="avatar-preview">
+          <div class="avatar-overlay">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+        <div class="nav-profile-text">
+          <div class="nav-profile-name" id="navDisplayName">User</div>
+          <div class="nav-profile-email" id="navEmail">&nbsp;</div>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button type="button" class="nav-item active" data-tab="accountTab">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>Your info</span>
+        </button>
+        <button type="button" class="nav-item" data-tab="securityTab">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Sign-in &amp; security</span>
+        </button>
+      </nav>
+
+      <div class="nav-divider"></div>
+
+      <button type="button" class="nav-signout-btn" id="signOutBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        <span>Sign out</span>
+      </button>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="settings-content">
+
+      <!-- ---- Your info ---- -->
+      <section class="settings-panel" id="accountTab">
+        <h1>Your info</h1>
+        <p class="subtitle">Update your display name and profile photo.</p>
+
+        <form id="profileForm" novalidate>
+          <div class="form-group">
+            <label for="displayName">Display Name</label>
+            <input type="text" id="displayName" placeholder="Your name" autocomplete="name">
+          </div>
+
+          <div class="form-group phone-field">
+            <label for="settingsPhone">Phone Number</label>
+            <div class="phone-input-wrap">
+              <button type="button" class="phone-country-btn" id="settingsPhoneCountryBtn" aria-haspopup="listbox" aria-expanded="false">
+                <img class="phone-flag" id="settingsPhoneFlag" src="https://flagcdn.com/24x18/tn.png" srcset="https://flagcdn.com/48x36/tn.png 2x" width="18" height="13" alt="">
+                <span class="phone-dial-code" id="settingsPhoneDialCode">+216</span>
+                <svg class="phone-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <input id="settingsPhone" type="tel" inputmode="numeric" placeholder="Phone number" autocomplete="tel">
+            </div>
+            <div class="phone-country-dropdown" id="settingsPhoneCountryDropdown" hidden>
+              <input type="text" class="phone-country-search" id="settingsPhoneCountrySearch" placeholder="Search country or code..." autocomplete="off">
+              <ul class="phone-country-list" id="settingsPhoneCountryList" role="listbox"></ul>
+            </div>
+          </div>
+
+          <div id="profileAlert" class="form-alert" role="alert" hidden></div>
+
+          <button type="submit" class="save-btn" id="saveProfileBtn">
+            <span class="btn-label">Save Changes</span>
+            <span class="btn-spinner" hidden></span>
+          </button>
+        </form>
+      </section>
+
+      <!-- ---- Sign-in & security ---- -->
+      <section class="settings-panel" id="securityTab" hidden>
+        <h1>Sign-in &amp; security</h1>
+        <p class="subtitle">Manage the email and password you use to sign in.</p>
+
+        <div class="security-card">
+          <div class="security-card-info">
+            <div class="security-card-title">Email address</div>
+            <div class="security-card-value" id="currentEmailDisplay">&nbsp;</div>
+          </div>
+          <button type="button" class="ghost-btn" id="changeEmailBtn">Change</button>
+        </div>
+
+        <div class="security-card">
+          <div class="security-card-info">
+            <div class="security-card-title">Password</div>
+            <div class="security-card-value">••••••••</div>
+          </div>
+          <button type="button" class="ghost-btn" id="changePasswordBtn">Change</button>
+        </div>
+
+        <div id="securityAlert" class="form-alert" role="alert" hidden></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Avatar crop editor -->
+<div class="modal-overlay" id="avatarCropModal">
+  <div class="modal-card crop-modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Crop &amp; rotate</div>
+      <button type="button" class="close-modal-btn" data-close-modal="avatarCropModal">&times;</button>
+    </div>
+    <div class="crop-stage-wrap">
+      <canvas id="avatarCropCanvas" class="crop-canvas" width="360" height="360"></canvas>
+    </div>
+    <div class="crop-controls">
+      <label for="avatarZoom">Zoom</label>
+      <input id="avatarZoom" type="range" min="1" max="3" step="0.01" value="1">
+      <button type="button" class="btn crop-rotate-btn" id="avatarRotateBtn">Rotate 90°</button>
+      <button type="button" class="btn crop-reset-btn" id="avatarResetBtn">Reset</button>
+    </div>
+    <p class="crop-hint">Drag the image to choose what appears in your profile photo.</p>
+    <div id="avatarCropAlert" class="form-alert" role="alert" hidden></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" data-close-modal="avatarCropModal">Cancel</button>
+      <button type="button" class="btn btn-save" id="avatarCropApplyBtn">Use photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change email -->
+<div class="modal-overlay" id="changeEmailModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Change email address</div>
+      <button type="button" class="close-modal-btn" data-close-modal="changeEmailModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">We'll send a confirmation link to the new address — the change won't take effect until you click it.</p>
+      <div class="form-group">
+        <label for="newEmailInput">New Email Address</label>
+        <input type="email" id="newEmailInput" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div id="changeEmailAlert" class="form-alert" role="alert" hidden></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" data-close-modal="changeEmailModal">Cancel</button>
+      <button type="button" class="btn btn-save" id="changeEmailSubmitBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change password -->
+<div class="modal-overlay" id="changePasswordModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Change password</div>
+      <button type="button" class="close-modal-btn" data-close-modal="changePasswordModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="newPasswordInput">New Password</label>
+        <div class="password-wrap">
+          <input type="password" id="newPasswordInput" placeholder="At least 8 characters" autocomplete="new-password">
+          <button type="button" class="toggle-pw" data-target="newPasswordInput" aria-label="Show password">&#9673;</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="confirmNewPasswordInput">Confirm New Password</label>
+        <div class="password-wrap">
+          <input type="password" id="confirmNewPasswordInput" placeholder="Re-enter new password" autocomplete="new-password">
+          <button type="button" class="toggle-pw" data-target="confirmNewPasswordInput" aria-label="Show password">&#9673;</button>
+        </div>
+      </div>
+      <div id="changePasswordAlert" class="form-alert" role="alert" hidden></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" data-close-modal="changePasswordModal">Cancel</button>
+      <button type="button" class="btn btn-save" id="changePasswordSubmitBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic "confirm your current password" step, used before actually
+     applying an email or password change. -->
+<div class="modal-overlay" id="confirmPasswordModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Confirm your password</div>
+      <button type="button" class="close-modal-btn" data-close-modal="confirmPasswordModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">For your security, enter your current password to continue.</p>
+      <div class="form-group">
+        <label for="confirmPasswordInput">Current Password</label>
+        <div class="password-wrap">
+          <input type="password" id="confirmPasswordInput" placeholder="Enter current password" autocomplete="current-password">
+          <button type="button" class="toggle-pw" data-target="confirmPasswordInput" aria-label="Show password">&#9673;</button>
+        </div>
+      </div>
+      <div id="confirmPasswordAlert" class="form-alert" role="alert" hidden></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" data-close-modal="confirmPasswordModal">Cancel</button>
+      <button type="button" class="btn btn-save" id="confirmPasswordSubmitBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign out confirmation -->
+<div class="modal-overlay" id="signOutConfirmModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Sign out?</div>
+      <button type="button" class="close-modal-btn" data-close-modal="signOutConfirmModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">You'll need to sign in again to access your account.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" data-close-modal="signOutConfirmModal">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmSignOutBtn">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

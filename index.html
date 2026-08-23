@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+<!-- 1. SEO Primary Meta Tags (L-Google) -->
+<title>LEBED.ai — Founded by Omar Mahmoudi</title>
+<meta name="title" content="LEBED.ai — Founded by Omar Mahmoudi">
+<meta name="description" content="LEBED.ai is an AI assistant for chat, coding, and complex problem solving, founded by Omar Mahmoudi.">
+<meta name="keywords" content="LEBED, LEBED.ai, Omar Mahmoudi, AI assistant, AI chatbot, coding assistant, artificial intelligence">
+<meta name="author" content="Omar Mahmoudi">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://lebedai.online/">
+
+<!-- 2. Open Graph / Facebook / WhatsApp -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lebedai.online/">
+<meta property="og:title" content="LEBED.ai — Founded by Omar Mahmoudi">
+<meta property="og:description" content="LEBED.ai is an AI assistant for chat, coding, and complex problem solving, founded by Omar Mahmoudi.">
+<meta property="og:image" content="https://lebedai.online/logo%20pref.png">
+
+<!-- 3. Twitter Preview -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://lebedai.online/">
+<meta property="twitter:title" content="LEBED.ai — Founded by Omar Mahmoudi">
+<meta property="twitter:description" content="LEBED.ai is an AI assistant for chat, coding, and complex problem solving, founded by Omar Mahmoudi.">
+<meta property="twitter:image" content="https://lebedai.online/logo%20pref.png">
+
+<!-- Fonts & Stylesheets -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" type="image/png" href="logo%20pref.png">
+
+<!-- ===== PWA ===== -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF6B00">
+<link rel="apple-touch-icon" href="logo%20pref.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LEBED.ai">
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="drop-zone-overlay" id="dropZoneOverlay">
+  <div class="drop-zone-message">
+    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <span>Drop files to attach</span>
+  </div>
+</div>
+
+<div class="app-layout">
+  
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="logo-core">
+          <img src="logo%20pref.png" alt="LEBED.ai" class="pixel-logo dynamic-logo" data-logo-default="logo%20pref.png" data-logo-codec="logo-blue.png">
+        </div>
+        <div class="brand-title">LEBED<span>.ai</span></div>
+      </div>
+    </div>
+
+    <button class="new-chat-btn" id="newChatBtn">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+        <span>New chat</span>
+        <span class="cooldown-timer" id="newChatTimer"></span>
+      </div>
+      <span class="shortcut-tag">Ctrl+Shift+O</span>
+    </button>
+
+    <button class="support-btn" id="supportBtn">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path></svg>
+        <span>Support Us</span>
+      </div>
+    </button>
+
+    <div class="chat-search-wrapper">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="chat-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="chatSearchInput" class="chat-search-input" placeholder="Search chats..." autocomplete="off">
+    </div>
+
+    <div class="recents-header">
+      <span class="recents-title">Recents</span>
+      <button class="clear-all-btn" id="clearAllBtn" title="Clear all history">Clear All</button>
+    </div>
+
+    <div class="history-list" id="historyList"></div>
+
+    <div class="user-profile" id="userProfileCard">
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">U</div>
+        <div class="user-name" id="sidebarUserName">User Profile</div>
+      </div>
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--muted); flex-shrink:0;" id="settingsGearBtn" title="Account settings"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 01.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 01-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 01-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 01-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 019 4.6a1.65 1.65 0 011-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 011 1.51 1.65 1.65 0 011.82.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 01-.33 1.82 1.65 1.65 0 011.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 01-1.51 1z"/></svg>
+    </div>
+  </aside>
+
+  <main class="main-workspace">
+    <header>
+      <div class="header-actions">
+        <button id="toggleSidebar" style="background:none; border:none; color:var(--muted); cursor:pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <!-- Navbar Logo (small) -->
+        <div class="navbar-brand">
+          <img src="logo%20pref.png" alt="LEBED.ai" class="navbar-logo dynamic-logo" data-logo-default="logo%20pref.png" data-logo-codec="logo-blue.png">
+          <span class="navbar-title">LEBED<span>.ai</span></span>
+        </div>
+        <button id="themeToggle" title="Toggle dark / light mode" style="background:none; border:none; color:var(--muted); cursor:pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
+          <svg id="themeIconMoon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg>
+          <svg id="themeIconSun" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+        </button>
+        <button class="auth-trigger" id="authTrigger" type="button" aria-label="Sign in" title="Sign in"><svg class="auth-trigger-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="auth-trigger-dot"></span><span id="authTriggerText" class="sr-only">Sign in</span></button>
+      </div>
+
+      <div class="header-status-group">
+        <div class="status-badge" id="statusBadge">
+          <span class="status-dot"></span>
+          <span id="statusBadgeText">LEBED.ai</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="chat-viewport" id="chatViewport">
+      <div class="chat-container">
+        <div class="hero-greeting" id="heroGreeting">
+          <!-- Hero Logo -->
+          <div class="hero-logo-container">
+            <img src="logo%20pref.png" alt="LEBED.ai" class="hero-logo dynamic-logo" data-logo-default="logo%20pref.png" data-logo-codec="logo-blue.png">
+            <div class="hero-badge">AI Powered</div>
+          </div>
+          <div class="typewriter-title">
+            <div id="typewriterContainer"></div><span class="cursor"></span>
+          </div>
+          <p>How may I support your next AI workflow?</p>
+        </div>
+        <div class="message-list" id="messageList"></div>
+      </div>
+    </div>
+
+    <div class="input-wrapper">
+      <div class="chat-mode-row">
+        <button id="codecToggleBtn" class="codec-toggle-btn" title="Codec Mode — Senior Coding Assistant persona for this chat">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          <span>Codec</span>
+        </button>
+      </div>
+      <div class="prompt-box">
+        <input type="search" id="userInput" class="prompt-input" placeholder="Ask anything..." autocomplete="off" name="lebed-chat-query" data-lpignore="true" data-form-type="other" dir="auto" readonly>
+        
+        <button class="action-btn file-btn" id="fileBtn" title="Upload files">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+          </svg>
+        </button>
+        <input type="file" id="fileInput" multiple style="display:none;">
+        
+        <button class="action-btn mic-btn" id="micBtn" title="Speech to text">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"></path></svg>
+        </button>
+        <button class="action-btn" id="sendBtn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+      <div class="file-preview-container" id="filePreviewContainer"></div>
+      <div class="input-footer">
+        LEBED.ai — Founded by Omar Mahmoudi
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">User Profile</div>
+      <button class="close-modal-btn" onclick="closeModal('profileModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
+      <div class="avatar-upload-wrapper" id="uploadAvatarTrigger" title="Click to upload image">
+        <div class="modal-avatar-preview" id="modalAvatarPreview">U</div>
+        <div class="upload-overlay-ic">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input type="text" class="form-input" id="nameInput" placeholder="Your Name">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('profileModal')">Cancel</button>
+      <button class="btn btn-save" id="saveProfileBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">AI Service</div>
+      <button class="close-modal-btn" onclick="closeModal('settingsModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="support-subtitle">LEBED.ai securely connects to its AI service. API keys are never stored in your browser.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn btn-save" onclick="closeModal('settingsModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="supportModal">
+  <div class="modal-card support-modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Support LEBED.ai</div>
+      <button class="close-modal-btn" onclick="closeModal('supportModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="donate-sticker-wrapper">
+        <img src="donate.png" alt="Support LEBED.ai" class="donate-sticker">
+      </div>
+      <p class="support-subtitle">Every contribution helps keep LEBED.ai alive and growing. Choose your preferred option below 🧡</p>
+
+      <div class="support-tabs">
+        <button class="support-tab-btn active" id="tabUsdBtn" onclick="switchSupportTab('usd')">🌍 USD (International)</button>
+        <button class="support-tab-btn" id="tabTndBtn" onclick="switchSupportTab('tnd')">🇹🇳 TND (Tunisia)</button>
+      </div>
+
+      <div class="support-tab-content active" id="usdTabContent">
+        <div class="kofi-card">
+          <div class="kofi-icon">☕</div>
+          <div class="kofi-text">
+            <div class="kofi-title">Buy me a coffee</div>
+            <div class="kofi-desc">Support via Ko-fi — quick, secure, international.</div>
+          </div>
+          <a href="https://ko-fi.com/mahmoudiiomarr" target="_blank" rel="noopener noreferrer" class="kofi-btn">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path></svg>
+            Support on Ko-fi
+          </a>
+        </div>
+      </div>
+
+      <div class="support-tab-content" id="tndTabContent">
+        <div class="payment-card">
+          <div class="payment-row">
+            <div class="payment-info">
+              <span class="payment-label">D17 (PostePay)</span>
+              <span class="payment-value" id="val-d17">53356828</span>
+            </div>
+            <button class="copy-payment-btn" data-copy-target="val-d17">Copy</button>
+          </div>
+          <div class="payment-row">
+            <div class="payment-info">
+              <span class="payment-label">Flouci Phone</span>
+              <span class="payment-value" id="val-flouci">53356828</span>
+            </div>
+            <button class="copy-payment-btn" data-copy-target="val-flouci">Copy</button>
+          </div>
+          <div class="payment-row">
+            <div class="payment-info">
+              <span class="payment-label">RIB Bancaire (BTE)</span>
+              <span class="payment-value" id="val-rib">24 031 209 4432 511101 65</span>
+            </div>
+            <button class="copy-payment-btn" data-copy-target="val-rib">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('supportModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="changelogModal">
+  <div class="modal-card changelog-modal-card">
+    <div class="changelog-header">
+      <div class="changelog-title">What's New in LEBED.ai</div>
+      <p class="changelog-subtitle">We decided to keep it simple, smart, and efficient. We're introducing the "Tunisian Method" — because coding shouldn't be over-engineered.</p>
+    </div>
+    <div class="modal-body changelog-body">
+      <ul class="changelog-list">
+        <li>
+          <span class="changelog-icon">⚡</span>
+          <div class="changelog-text">
+            <strong>Codec Mode</strong>
+            <span>Toggle it on for pure, readable, and direct coding logic. No spaghetti code, just straight algorithms (DÉBUT, SI, ALORS, FIN) — with a brand new special UI.</span>
+          </div>
+        </li>
+        <li>
+          <span class="changelog-icon">📱</span>
+          <div class="changelog-text">
+            <strong>PWA Ready</strong>
+            <span>Install LEBED.ai on your device and take your AI assistant everywhere.</span>
+          </div>
+        </li>
+        <li>
+          <span class="changelog-icon">🎨</span>
+          <div class="changelog-text">
+            <strong>Pro UI/UX</strong>
+            <span>Cleaner icons, better contrast, and micro-interactions that feel like butter.</span>
+          </div>
+        </li>
+        <li>
+          <span class="changelog-icon">📂</span>
+          <div class="changelog-text">
+            <strong>Pro Features</strong>
+            <span>Search your history, pin important chats, and export to PDF/TXT.</span>
+          </div>
+        </li>
+        <li>
+          <span class="changelog-icon">🛡️</span>
+          <div class="changelog-text">
+            <strong>Anti-Spam</strong>
+            <span>A smoother, controlled workflow for a better experience.</span>
+          </div>
+        </li>
+      </ul>
+      <p class="changelog-outro">The interface is cleaner, the logic is sharper, and the experience is faster.</p>
+    </div>
+    <div class="modal-footer changelog-footer">
+      <button class="btn btn-save changelog-btn" id="changelogCloseBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="cmdPalette">
+  <input type="text" id="cmdInput" placeholder="Command...">
+  <div id="cmdList">
+    <div class="cmd-item active">Switch Font <span>Ctrl+F</span></div>
+    <div class="cmd-item">Clear Chat <span>Ctrl+L</span></div>
+  </div>
+</div>
+
+<div class="auth-overlay" id="authOverlay" aria-hidden="true">
+  <section class="auth-shell" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="auth-close" id="authClose" type="button" aria-label="Close authentication">&times;</button>
+    <div class="auth-brand"><img src="logo%20pref.png" alt="LEBED.ai" class="auth-logo dynamic-logo" data-logo-default="logo%20pref.png" data-logo-codec="logo-blue.png"><span>LEBED<span>.ai</span></span><small>IDENTITY CORE / 0.3</small></div>
+    <div class="auth-view" id="loginView">
+      <div class="auth-kicker">WELCOME BACK</div><h2 id="authTitle">Sign in to your workspace</h2><p class="auth-copy">Your conversations, settings, and AI workflow in one secure place.</p>
+      <form id="loginForm" novalidate>
+        <div class="float-field"><input id="loginEmail" type="email" placeholder=" " autocomplete="email" required><label for="loginEmail">Email address</label><span class="field-state"></span></div>
+        <div class="float-field password-field"><input id="loginPassword" type="password" placeholder=" " autocomplete="current-password" required><label for="loginPassword">Password</label><button class="password-toggle" type="button" data-target="loginPassword" aria-label="Show password">&#9673;</button></div>
+        <div class="auth-options"><label class="check-label"><input id="rememberMe" type="checkbox"> <span>Remember me</span></label><button class="text-link" id="forgotPassword" type="button">Forgot password?</button></div>
+        <p class="auth-error" id="loginError" role="alert"></p><button class="auth-submit" type="submit">Sign in <span>&rarr;</span></button>
+      </form>
+      <p class="auth-switch">New to LEBED.ai? <button class="text-link" data-show-view="registerView" type="button">Create an account</button></p>
+    </div>
+    <div class="auth-view" id="registerView" hidden>
+      <div class="auth-kicker">NEW IDENTITY</div><h2>Create your account</h2><p class="auth-copy">Activate your full LEBED.ai workspace after a quick email verification.</p>
+      <form id="registerForm" novalidate>
+        <div class="float-field"><input id="registerName" type="text" placeholder=" " autocomplete="name" required><label for="registerName">Full name</label></div>
+        <div class="float-field"><input id="registerEmail" type="email" placeholder=" " autocomplete="email" required><label for="registerEmail">Email address</label></div>
+        <div class="float-field password-field"><input id="registerPassword" type="password" placeholder=" " autocomplete="new-password" required><label for="registerPassword">Password</label><button class="password-toggle" type="button" data-target="registerPassword" aria-label="Show password">&#9673;</button></div>
+        <div class="strength-meter"><div class="strength-track"><div id="strengthBar"></div></div><span id="strengthText">Use 8+ characters</span></div>
+        <div class="auth-two-col"><div class="float-field"><input id="registerDob" type="date" placeholder=" " required><label for="registerDob">Date of birth</label></div><div class="float-field phone-field">
+          <div class="phone-input-wrap">
+            <button type="button" class="phone-country-btn" id="phoneCountryBtn" aria-haspopup="listbox" aria-expanded="false">
+              <img class="phone-flag" id="phoneFlag" src="https://flagcdn.com/24x18/tn.png" srcset="https://flagcdn.com/48x36/tn.png 2x" width="18" height="13" alt="">
+              <span class="phone-dial-code" id="phoneDialCode">+216</span>
+              <svg class="phone-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <input id="registerPhone" type="tel" inputmode="numeric" placeholder=" " autocomplete="tel" required>
+          </div>
+          <label for="registerPhone">Phone number</label>
+          <div class="phone-country-dropdown" id="phoneCountryDropdown" hidden>
+            <input type="text" class="phone-country-search" id="phoneCountrySearch" placeholder="Search country or code..." autocomplete="off">
+            <ul class="phone-country-list" id="phoneCountryList" role="listbox"></ul>
+          </div>
+        </div></div>
+        <p class="auth-error" id="registerError" role="alert"></p><button class="auth-submit" type="submit">Create account <span>&rarr;</span></button>
+      </form>
+      <p class="auth-switch">Already have an account? <button class="text-link" data-show-view="loginView" type="button">Sign in</button></p>
+    </div>
+    <div class="auth-view" id="checkEmailView" hidden>
+      <div class="check-email-icon">&#9993;</div>
+      <div class="auth-kicker">EMAIL VERIFICATION</div><h2>Verify your email</h2><p class="auth-copy">We sent a confirmation link to <strong id="checkEmailAddress">your email</strong>. Open your inbox, click the link, then come back here and sign in.</p>
+      <p class="auth-error" id="checkEmailError" role="alert"></p>
+      <button class="text-link" id="resendVerification" type="button">Resend email</button>
+      <button class="text-link otp-back" data-show-view="registerView" type="button">&larr; Edit registration details</button>
+    </div>
+    <div class="auth-footer"><span class="pulse-dot"></span> End-to-end identity protocol ready</div>
+  </section>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+
+
+<script>
+(function () {
+  const form = document.getElementById('registerForm');
+  const dob = document.getElementById('registerDob');
+  const registerError = document.getElementById('registerError');
+
+  if (!form || !dob || !registerError) return;
+
+  function getCutoffDate() {
+    const today = new Date();
+    return new Date(
+      today.getFullYear() - 12,
+      today.getMonth(),
+      today.getDate()
+    );
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // Keep the calendar restricted to people aged 12 or older.
+  dob.max = formatDate(getCutoffDate());
+
+  // Validate ONLY when Create account submits the form.
+  // Capture phase makes this run before existing registration submit handlers.
+  form.addEventListener('submit', function (event) {
+    if (!dob.value) return;
+
+    const [year, month, day] = dob.value.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+    const cutoffDate = getCutoffDate();
+
+    if (birthDate > cutoffDate) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      registerError.textContent =
+        'You must be at least 12 years old to register';
+
+      dob.classList.add('age-invalid');
+      dob.focus();
+      return false;
+    }
+
+    registerError.textContent = '';
+    dob.classList.remove('age-invalid');
+  }, true);
+})();
+</script>
+
+</body>
+</html>
