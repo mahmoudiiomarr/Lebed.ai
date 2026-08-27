@@ -243,6 +243,33 @@ async function deleteImageFromDB(id) {
   }
 }
 
+// ===== PERMANENT IMAGE STORAGE (Supabase Storage) =====
+// IndexedDB above is per-browser/per-device only — it's what silently
+// broke images on refresh-from-another-device. Signed-in users instead
+// get their images uploaded to the public 'chat-images' Storage bucket
+// (see chat_images_migration.sql), and the resulting permanent URL is
+// what actually gets saved on the message row and re-rendered later.
+async function uploadImageToStorage(file, userId) {
+  if (!supabaseClient || !userId) return null;
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: uploadError } = await supabaseClient
+      .storage
+      .from('chat-images')
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (uploadError) {
+      console.warn('[LEBED.ai] Image upload failed:', uploadError.message);
+      return null;
+    }
+    const { data } = supabaseClient.storage.from('chat-images').getPublicUrl(path);
+    return data?.publicUrl || null;
+  } catch (err) {
+    console.warn('[LEBED.ai] Image upload failed:', err.message || err);
+    return null;
+  }
+}
+
 // ===== USER PROFILE =====
 let userProfile = JSON.parse(localStorage.getItem('lebed_profile')) || { name: 'User', photo: null };
 
@@ -581,7 +608,7 @@ async function loadRemoteHistory() {
   if (!(await setSupabaseSession())) return;
   const { data, error } = await supabaseClient
     .from('chats')
-    .select('id, title, created_at, messages(id, role, content, created_at)')
+    .select('id, title, created_at, messages(id, role, content, created_at, image_urls)')
     .order('created_at', { ascending: false });
   if (error) {
     console.warn('[LEBED.ai] Chat history is unavailable:', error.message);
@@ -595,7 +622,12 @@ async function loadRemoteHistory() {
       id: message.id,
       sender: message.role === 'user' ? 'user' : 'ai',
       text: message.content,
-      timestamp: new Date(message.created_at).toLocaleTimeString()
+      timestamp: new Date(message.created_at).toLocaleTimeString(),
+      // Permanent Supabase Storage URLs — these are what make images show
+      // up after a refresh or on a different device. imageIds (IndexedDB)
+      // are intentionally NOT restored here; they only ever existed on the
+      // device that uploaded them.
+      imageUrls: (message.image_urls && message.image_urls.length) ? message.image_urls : undefined
     }))
   }));
   remoteChatIds = new Set(chats.map(chat => chat.id));
@@ -631,7 +663,8 @@ async function persistRemoteMessage(chat, message) {
     id: message.id,
     chat_id: chat.id,
     role: message.sender === 'user' ? 'user' : 'ai',
-    content: message.text
+    content: message.text,
+    image_urls: message.imageUrls || []
   });
   if (error) console.warn('[LEBED.ai] Could not save message:', error.message);
 }
@@ -1463,25 +1496,43 @@ function renderMessageBubble(msgObj) {
   }
 
   // Show the actual uploaded image(s) as real thumbnails above the text
-  // bubble, pulled live from IndexedDB — not just the "[Image attached]"
-  // text note. Loaded async since IndexedDB reads are promise-based; the
-  // bubble text still renders immediately and the thumbnail pops in
-  // right after.
-  if (msgObj.imageIds && msgObj.imageIds.length) {
+  // bubble, instead of just the "[Image attached]" text note.
+  //
+  // imageUrls (permanent Supabase Storage links) is the primary source —
+  // it's what makes images survive a page refresh and show up on a
+  // different device, since it came back from the database, not the
+  // local browser. imageIds (IndexedDB) is kept only as a same-device
+  // fallback for guests, who have nowhere permanent to upload to, and as
+  // an instant local cache immediately after sending (before/if the
+  // Storage upload finishes).
+  const hasRemoteUrls = msgObj.imageUrls && msgObj.imageUrls.length;
+  const hasLocalIds = msgObj.imageIds && msgObj.imageIds.length;
+
+  if (hasRemoteUrls || hasLocalIds) {
     const msgContent = row.querySelector('.msg-content');
     const thumbsWrap = document.createElement('div');
     thumbsWrap.className = 'msg-image-thumbs';
     msgContent.insertBefore(thumbsWrap, bubble);
-    msgObj.imageIds.forEach(async (imgId) => {
-      const dataUrl = await getImageFromDB(imgId);
-      if (!dataUrl) return;
+
+    const appendThumb = (url) => {
       const img = document.createElement('img');
-      img.src = dataUrl;
+      img.src = url;
       img.className = 'msg-image-thumb';
       img.alt = 'Uploaded image';
-      img.addEventListener('click', () => window.open(dataUrl, '_blank'));
+      img.addEventListener('click', () => window.open(url, '_blank'));
       thumbsWrap.appendChild(img);
-    });
+    };
+
+    if (hasRemoteUrls) {
+      msgObj.imageUrls.forEach(appendThumb);
+    } else {
+      // No permanent URL for this message (guest session, or the upload
+      // failed at send time) — fall back to whatever's cached locally.
+      msgObj.imageIds.forEach(async (imgId) => {
+        const dataUrl = await getImageFromDB(imgId);
+        if (dataUrl) appendThumb(dataUrl);
+      });
+    }
   }
   
   chatViewport.scrollTop = chatViewport.scrollHeight;
@@ -1535,10 +1586,23 @@ async function handleSend() {
     // reload (the [Image attached] note in the message text stays as a
     // record that a file was there).
     const currentTurnImages = [];
-    // Persisted image IDs for this turn (IndexedDB keys) — these get
-    // stored on the message object itself so the image can be re-rendered
-    // and re-sent to the AI on future turns, even after a page reload.
+    // Persisted image IDs for this turn (IndexedDB keys) — local-only
+    // fallback, used for guests (no account = nowhere permanent to put
+    // the image) and as an instant-display cache before the Storage
+    // upload finishes.
     const currentTurnImageIds = [];
+    // Permanent Supabase Storage URLs for this turn — THIS is what makes
+    // images survive a refresh or show up on a different device. Only
+    // populated for signed-in users (see uploadImageToStorage()).
+    const currentTurnImageUrls = [];
+
+    // Signed-in users get their images uploaded to permanent Storage;
+    // resolve the user id once up front instead of per-file.
+    let uploaderUserId = null;
+    if (isRemoteHistoryEnabled()) {
+      const { data: userData } = await supabaseClient.auth.getUser();
+      uploaderUserId = userData?.user?.id || null;
+    }
 
     // Only non-image files (text/code/etc.) need a text note appended,
     // since their content has to be inlined as text for the AI to see it
@@ -1557,6 +1621,19 @@ async function handleSend() {
             await saveImageToDB(imageId, dataUrl);
             currentTurnImages.push(dataUrl);
             currentTurnImageIds.push(imageId);
+
+            if (uploaderUserId) {
+              const permanentUrl = await uploadImageToStorage(file, uploaderUserId);
+              if (permanentUrl) {
+                currentTurnImageUrls.push(permanentUrl);
+              } else {
+                // Upload failed (offline, storage quota, etc.) — the
+                // message still sends and still shows the image locally
+                // via IndexedDB this session, it just won't survive a
+                // refresh or show up on another device this time.
+                userMessageText += `\n⚠️ ${file.name} could not be saved permanently (upload failed) — it will only be visible on this device until you resend it.\n`;
+              }
+            }
           } else {
             const content = await readFileAsText(file);
             const isCode = isCodeFile(file);
@@ -1576,7 +1653,8 @@ async function handleSend() {
       sender: 'user',
       text: userMessageText,
       timestamp: new Date().toLocaleTimeString(),
-      imageIds: currentTurnImageIds.length ? currentTurnImageIds : undefined
+      imageIds: currentTurnImageIds.length ? currentTurnImageIds : undefined,
+      imageUrls: currentTurnImageUrls.length ? currentTurnImageUrls : undefined
     };
     renderMessageBubble(userMsgObj);
     if (userInput) userInput.value = '';
