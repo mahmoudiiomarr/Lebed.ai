@@ -16,12 +16,28 @@
 // Same Supabase Edge Function auth.js uses — see auth.js's comment for
 // why this replaced the old api/*.php endpoints (GitHub Pages, which is
 // what this site is actually hosted on, can't execute PHP at all).
+// persistSession + autoRefreshToken are ON so supabaseClient.auth.refreshSession()
+// (called from session.js's ensureValidAccessToken) actually works. Right
+// after this client is created, hydrateSupabaseSession() below loads this
+// app's own localStorage tokens into it — see loadProfile().
 const supabaseSettingsClient = (window.supabase && window.LEBED_SUPABASE_CONFIG)
   ? window.supabase.createClient(window.LEBED_SUPABASE_CONFIG.url, window.LEBED_SUPABASE_CONFIG.anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
+      auth: { persistSession: true, autoRefreshToken: true }
     })
   : null;
 const MAX_AVATAR_SIZE = 3 * 1024 * 1024;
+
+// Loads this app's lebed_token / lebed_refresh_token into supabaseSettingsClient
+// so auth.refreshSession() has something to work with. Call once before any
+// refresh attempt (loadProfile() does this on page load).
+async function hydrateSupabaseSession() {
+  if (!supabaseSettingsClient) return;
+  const accessToken = localStorage.getItem('lebed_token');
+  const refreshToken = localStorage.getItem('lebed_refresh_token');
+  if (accessToken && refreshToken) {
+    await supabaseSettingsClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  }
+}
 
 const els = {
   avatarPreview: document.getElementById('avatarPreview'),
@@ -285,14 +301,17 @@ document.querySelectorAll('.nav-item').forEach((btn) => {
 
 // ===== Load the current session's profile into the page =====
 async function loadProfile() {
-  const token = getAccessToken();
-  if (!token) {
-    window.location.href = 'index.html';
-    return;
-  }
+  await hydrateSupabaseSession();
+  const token = await window.LebedSession.ensureValidAccessToken(supabaseSettingsClient);
+  if (!token) return; // ensureValidAccessToken already redirected to sign-in
 
   const { ok, result } = await postJSON('get-profile.php', { access_token: token });
   if (!ok || !result.success) {
+    if (window.LebedSession.isSessionExpiredResponse(result)) {
+      window.LebedSession.clearLocalSession();
+      window.LebedSession.redirectToLogin();
+      return;
+    }
     showAlert(els.profileAlert, result.message || 'Could not load your profile. Please sign in again.', 'error');
     setTimeout(() => { window.location.href = 'index.html'; }, 2000);
     return;
@@ -533,7 +552,16 @@ document.getElementById('confirmPasswordSubmitBtn').addEventListener('click', as
     return;
   }
 
-  const token = getAccessToken();
+  // Refresh the access token right before submitting — this is what was
+  // missing before: the token could be minutes/hours old by the time the
+  // user actually finishes filling out the form and confirms their
+  // password, so it may have already expired.
+  const token = await window.LebedSession.ensureValidAccessToken(supabaseSettingsClient);
+  if (!token) {
+    closeModal('confirmPasswordModal');
+    return; // already redirected to sign-in
+  }
+
   const submitBtn = document.getElementById('confirmPasswordSubmitBtn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Confirming...';
@@ -583,6 +611,17 @@ document.getElementById('confirmPasswordSubmitBtn').addEventListener('click', as
 
     const { ok, result } = await postJSON(endpoint, body);
     if (!ok || !result.success) {
+      // Safety net: the refresh token itself may be dead (long-offline
+      // device, revoked session elsewhere, etc.) even though the access
+      // token looked refreshable a moment ago. Don't leave a dead form
+      // on screen — clear the stale session and send the user back to
+      // sign in instead of showing a raw error in the modal.
+      if (window.LebedSession.isSessionExpiredResponse(result)) {
+        closeModal('confirmPasswordModal');
+        window.LebedSession.clearLocalSession();
+        window.LebedSession.redirectToLogin();
+        return;
+      }
       throw new Error(result.message || 'That did not work. Please try again.');
     }
 
@@ -634,6 +673,9 @@ document.getElementById('confirmPasswordSubmitBtn').addEventListener('click', as
 els.signOutBtn.addEventListener('click', () => openModal('signOutConfirmModal'));
 
 els.confirmSignOutBtn.addEventListener('click', async () => {
+  // Logout is best-effort server-side — don't bother refreshing here, an
+  // expired token is fine to send (or skip) since we clear everything
+  // locally right after regardless.
   const token = getAccessToken();
   els.confirmSignOutBtn.disabled = true;
   els.confirmSignOutBtn.textContent = 'Signing out…';

@@ -25,9 +25,13 @@
 // on (it's served from GitHub Pages, which can't execute PHP at all).
 // Everything now goes through Supabase Edge Functions instead, using the
 // same public anon key already exposed via supabase-config.js.
+// persistSession + autoRefreshToken are ON so this client (and the one in
+// settings.js) can actually call auth.refreshSession() later — see
+// session.js's ensureValidAccessToken(), which settings.js uses right
+// before submitting the profile/email/password forms.
 const supabaseAuthClient = (window.supabase && window.LEBED_SUPABASE_CONFIG)
   ? window.supabase.createClient(window.LEBED_SUPABASE_CONFIG.url, window.LEBED_SUPABASE_CONFIG.anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
+      auth: { persistSession: true, autoRefreshToken: true }
     })
   : null;
 
@@ -103,6 +107,12 @@ function resetAuthSurfaces() {
 
 function completeAuth(name, email, tokens = {}, photo = null) {
   setSession({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token, name, email, photo });
+  // Load the same tokens into supabase-js's own session so a later call to
+  // supabaseAuthClient.auth.refreshSession() (or the settings page's own
+  // client, hydrated the same way) has a real refresh_token to use.
+  if (supabaseAuthClient && tokens.access_token && tokens.refresh_token) {
+    supabaseAuthClient.auth.setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
+  }
   resetAuthSurfaces();
   renderAuthedNavbar(name);
   if (typeof window.renderUserProfile === 'function' && name) {
@@ -118,7 +128,12 @@ function completeAuth(name, email, tokens = {}, photo = null) {
  */
 function initAuth() {
   const token = localStorage.getItem('lebed_token');
+  const refreshToken = localStorage.getItem('lebed_refresh_token');
   if (!token) return false;
+
+  if (supabaseAuthClient && refreshToken) {
+    supabaseAuthClient.auth.setSession({ access_token: token, refresh_token: refreshToken });
+  }
 
   resetAuthSurfaces();
   const session = JSON.parse(localStorage.getItem('lebed_auth_session') || '{}');
