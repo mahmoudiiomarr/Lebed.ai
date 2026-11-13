@@ -10,7 +10,7 @@
 // Network-first fixes that going forward with no manual version bump
 // needed on every deploy, while still keeping the offline fallback intact.
 
-const CACHE_NAME = 'lebed-ai-v0.4';
+const CACHE_NAME = 'lebed-ai-v0.5';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1140,11 +1140,6 @@ header {
   15% { opacity: 1; }
   100% { opacity: 0; }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .codec-powerup-overlay { display: none; }
-}
-
 .chat-mode-row {
   display: flex;
   justify-content: flex-start;
